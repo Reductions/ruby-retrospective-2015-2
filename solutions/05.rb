@@ -46,24 +46,24 @@ class ObjectStore
 
   class BranchManager
     class Branch
-      attr_accessor :added, :removed, :commited
+      attr_accessor :added, :removed, :committed
 
-      def initialize(commited, added = {}, removed = [])
+      def initialize(committed, added = {}, removed = [])
         @added = added
         @removed = removed
-        @commited = commited
+        @committed = committed
       end
 
       private
 
       def commit(message)
         count = @added.size + @removed.size
-        content = @commited[-1].content.merge(@added).
+        content = @committed[-1].content.merge(@added).
                   reject { |key, _| @removed.include?(key) }
-        @commited << Commit.new(content, message)
+        @committed << Commit.new(content, message)
         clear
         Message.new("#{message}\n\t#{count} objects changed", true,
-                    @commited[-1])
+                    @committed[-1])
       end
 
       def clear
@@ -84,7 +84,7 @@ class ObjectStore
       if @branches.has_key?(symbol_name = name.to_sym)
         Message.new("Branch #{name} already exists.", false)
       else
-        @branches[symbol_name] = Branch.new(@current.commited.dup)
+        @branches[symbol_name] = Branch.new(@current.committed.dup)
         Message.new("Created branch #{name}.")
       end
     end
@@ -141,27 +141,27 @@ class ObjectStore
   end
 
   def remove(name)
-    if commited[1].content.include?(symbol_name = name.to_sym)
+    if committed[1].content.include?(symbol_name = name.to_sym)
       removed << symbol_name unless removed.include?(symbol_name)
       Message.new("Added #{name} for removal.", true,
-               commited[1].content[symbol_name])
+               committed[1].content[symbol_name])
     else
       Message.new("Object #{name} is not committed.", false)
     end
   end
 
   def checkout(hash)
-    if @branches.has_key?(branch_name.to_sym)
-      @current = branch_name.to_sym
-      Information.new("Switched to branch #{@current}")
+    if index = committed[1..-1].find_index { |commit| commit.hash == hash }
+      committed.pop(committed.size - index - 2)
+      Message.new("HEAD is now at #{hash}.", true, committed[-1])
     else
-      Information.new("Branch #{branch_name} does not exist", false)
+      Message.new("Commit #{hash} does not exist.", false)
     end
   end
 
   def head
-    if commited.size > 1
-      Message.new("#{commited[-1].message}", true, commited[-1])
+    if committed.size > 1
+      Message.new("#{committed[-1].message}", true, committed[-1])
     else
       Message.new("Branch #{@branch.name} does not have any commits yet.",
                   false)
@@ -169,20 +169,20 @@ class ObjectStore
   end
 
   def log
-    if commited.size == 1
+    if committed.size == 1
       Message.new("Branch #{@branch.name} does not have any commits yet.",
                   false)
     else
-      message = commited.reverse[0...-1].map { |item| item.to_s }.join("\n\n")
+      message = committed.reverse[0...-1].map { |item| item.to_s }.join("\n\n")
       Message.new(message)
       end
   end
 
   def get(name)
-    if commited[-1].content.has_key?(name.to_sym)
+    if committed[-1].content.has_key?(name.to_sym)
       Message.new("Found object #{name}.",
                   true,
-                  commited[-1].content[name.to_sym])
+                  committed[-1].content[name.to_sym])
     else
       Message.new("Object #{name} is not committed.", false)
     end
@@ -200,8 +200,8 @@ class ObjectStore
     @branch.current.added
   end
 
-  def commited
-    @branch.current.commited
+  def committed
+    @branch.current.committed
   end
 
   def removed
