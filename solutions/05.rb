@@ -55,7 +55,14 @@ class ObjectStore
         content = @commited[-1].content.merge(@added).
                   reject { |key, _| @removed.include?(key) }
         @commited << Commit.new(content, message)
-        Message.new("#{message}\n\t#{count} objects changed")
+        clear
+        Message.new("#{message}\n\t#{count} objects changed", true,
+                    @commited[-1])
+      end
+
+      def clear
+        @added = {}
+        @removed = []
       end
     end
 
@@ -194,3 +201,11 @@ class ObjectStore
     @branch.current.removed
   end
 end
+
+repo = ObjectStore.init
+    repo.add("object1", "content1")
+    repo.add("object2", "content2")
+    repo.commit("So cool!")
+    repo.remove("object2")
+    m = repo.commit("Removed object2")
+    puts m.message
