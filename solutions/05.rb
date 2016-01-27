@@ -92,9 +92,9 @@ class ObjectStore
     def checkout(branch_name)
       if @branches.has_key?(symbol_name = branch_name.to_sym)
         @current, @name = @branches[symbol_name], symbol_name
-        Message.new("Switched to branch #{@current}")
+        Message.new("Switched to branch #{@name}.")
       else
-        Message.new("Branch #{branch_name} does not exist", false)
+        Message.new("Branch #{branch_name} does not exist.", false)
       end
     end
 
@@ -102,9 +102,9 @@ class ObjectStore
       if branch_name.to_sym == @name
         Message.new("Can't remove current branch.", false)
       elsif @branches.has_key?(branch_name.to_sym)
-        Message.new("Branch #{branch_name} does not exist.", false)
-      else
         Message.new("Removed branch #{branch_name}", true)
+      else
+        Message.new("Branch #{branch_name} does not exist.", false)
       end
     end
 
