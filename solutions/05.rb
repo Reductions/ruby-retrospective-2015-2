@@ -68,7 +68,7 @@ class ObjectStore
     end
 
     def create(name)
-      if @branches.has_key(symbol_name = name.to_sym)
+      if @branches.has_key?(symbol_name = name.to_sym)
         Message.new("Branch #{name} already exists.", false)
       else
         @branches[symbol_name] = @current
@@ -88,7 +88,7 @@ class ObjectStore
     def remove(branch_name)
       if branch_name.to_sym == @name
         Message.new("Can't remove current branch.", false)
-      elsif @branches.has_key(branch_name.to_sym)
+      elsif @branches.has_key?(branch_name.to_sym)
         Message.new("Branch #{branch_name} does not exist.", false)
       else
         Message.new("Removed branch #{branch_name}", true)
@@ -120,7 +120,7 @@ class ObjectStore
 
   def commit(message)
     if added.empty? and removed.empty?
-      Message("Nothing to commit, working directory clean.", false)
+      Message.new("Nothing to commit, working directory clean.", false)
     else
       @branch.current.send(:commit, message)
     end
@@ -137,6 +137,12 @@ class ObjectStore
   end
 
   def checkout(hash)
+    if @branches.has_key?(branch_name.to_sym)
+      @current = branch_name.to_sym
+      Information.new("Switched to branch #{@current}")
+    else
+      Information.new("Branch #{branch_name} does not exist", false)
+    end
   end
 
   def head
