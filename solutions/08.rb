@@ -5,43 +5,33 @@ class Spreadsheet
     def initialize(message)
       @message = message
     end
-  end
 
-  class InvalidError < Error
-    def initialize(message)
-      super("Invalid expression '#{message}'")
+    def self.invalid(message)
+      self.new("Invalid expression '#{message}'")
     end
-  end
 
-  class CellError < Error
-    def initialize(message)
-      super("Cell '#{message}' does not exist")
+    def self.cell(message)
+      self.new("Cell '#{message}' does not exist")
     end
-  end
 
-  class IndexError < Error
-    def initialize(message)
-      super("Invalid cell index '#{message}'")
+    def self.index(message)
+      self.new("Invalid cell index '#{message}'")
     end
-  end
 
-  class UnknownError < Error
-    def initialize(message)
-      super("Unknown function '#{message}'")
+    def self.unknown(message)
+      self.new("Unknown function '#{message}'")
     end
-  end
 
-  class LessError < Error
-    def initialize(function, size)
-      super("Wrong number of arguments for '#{function}':")
-      @message << " expected at least 2, got #{size}"
+    def self.less(function, size)
+      message = "Wrong number of arguments for '#{function}':"
+      message << " expected at least 2, got #{size}"
+      self.new(message)
     end
-  end
 
-  class ExactError < Error
-    def initialize(function, size)
-      super("Wrong number of arguments for '#{function}':")
-      @message << " expected 2, got #{size}"
+    def self.exact(function, size)
+      message = "Wrong number of arguments for '#{function}':"
+      message << " expected 2, got #{size}"
+      self.new(message)
     end
   end
 
@@ -70,7 +60,7 @@ class Spreadsheet
 
     def calculate(table)
       /\A= *([A-Z]+[1-9])+\z/.match(@text)
-      raise InvalidError.new(@text.delete('=')) if not index = $1
+      raise Error.invalid(@text.delete('=')) if not index = $1
       result = table[index]
       return result if /\A[0-9]+\.[0-9]+\z/ !~ result and /\A[0-9]+\z/ !~ result
       return result.to_f.floor.to_s if result.to_f == result.to_f.floor
@@ -89,7 +79,7 @@ class Spreadsheet
 
     def calculate(table)
       /\A= *([0-9]+\.?[0-9]*)\z/.match(@text)
-      raise InvalidError.new(@text.delete('=')) if not result = $1
+      raise Error.invalid(@text.delete('=')) if not result = $1
       return result.to_f.floor.to_s if result.to_f == result.to_f.floor
       '%.2f' % result.to_f.round(2)
     end
@@ -113,11 +103,11 @@ class Spreadsheet
     end
 
     def calculate(table)
-      /\A= *([A-Z]+) *\(([A-Z0-9, .]+)\)\z/.match(@text)
+      /\A= *([A-Z]+) *\(([A-Z0-9, .]*)\)\z/.match(@text)
       action, list = $1, $2
-      raise InvalidError.new(@text.delete('=')) if not action
-      raise InvalidError.new(@text.delete('=')) if not valid(list)
-      raise UnknownError.new(action) if not @@known[action.to_sym]
+      raise Error.invalid(@text.delete('=')) if not action
+      raise Error.invalid(@text.delete('=')) if not valid(list)
+      raise Error.unknown(action) if not @@known[action.to_sym]
       helper(action.to_sym, list, table)
     end
 
@@ -133,7 +123,7 @@ class Spreadsheet
 
     def multiple(action, list, table)
       list = list.split(/ *, */)
-      raise LessError.new(action, list.size) if list.size < 2
+      raise Error.less(action, list.size) if list.size < 2
       result = list.map { |item| evaluate(item).calculate(table).to_f }.
                reduce(@@known[action][0])
       return result.to_f.floor.to_s if result.to_f == result.to_f.floor
@@ -142,7 +132,7 @@ class Spreadsheet
 
     def binary(action, list, table)
       list = list.split(/ *, */)
-      raise ExactError.new(action, list.size) if list.size != 2
+      raise Error.exact(action, list.size) if list.size != 2
       list.map! { |item| evaluate(item).calculate(table).to_f }
       result = list[0].to_f.send(@@known[action][0], list[1].to_f)
       return result.to_f.floor.to_s if result.to_f == result.to_f.floor
@@ -155,6 +145,7 @@ class Spreadsheet
     end
 
     def valid(list)
+      return true if list =~ / */
       list.split(/ *, */).each do |item|
         return true if item =~ /\A([0-9]+\.?[0-9]*)\z/
         return true if item =~ /\A*([A-Z]+[1-9])+\z/
@@ -196,7 +187,7 @@ class Spreadsheet
   def cell_at(cell)
     column, row = index(cell)
     if row >= @cells.size or column >= @cells[0].size
-      raise CellError.new(cell)
+      raise Error.cell(cell)
     end
     @cells[row][column].to_s
   end
@@ -204,7 +195,7 @@ class Spreadsheet
   def [](cell)
     column, row = index(cell)
     if row >= @cells.size or column >= @cells[0].size
-      raise CellError.new(cell)
+      raise Error.cell(cell)
     end
     @cells[row][column].calculate(self)
   end
@@ -217,9 +208,9 @@ class Spreadsheet
   private
 
   def index(cell)
-    /\A([A-Z]+)([1-9]+)\z/.match(cell)
+    /\A([A-Z]+)([1-9][0-9]*)\z/.match(cell)
     column, row = $1, $2
-    raise IndexError.new(cell) if not column or not row
+    raise Error.index(cell) if not column or not row
     column = column.split('').map { |item| item.ord - 'A'.ord + 1 }.
              reduce(0) { |result, item| result * 26 + item } - 1
     return column, row.to_i - 1
