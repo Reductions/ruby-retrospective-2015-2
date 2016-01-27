@@ -85,7 +85,7 @@ class ObjectStore
         Message.new("Branch #{name} already exists.", false)
       else
         @branches[symbol_name] = Branch.new(@current.commited.dup)
-        Message.new("Creat branch #{name}.")
+        Message.new("Created branch #{name}.")
       end
     end
 
@@ -113,7 +113,7 @@ class ObjectStore
         if item == @name
           "* #{item}"
         else
-          item.to_s
+          "  #{item}"
         end
       end.join("\n")
       Message.new(message)
@@ -207,21 +207,3 @@ class ObjectStore
     @branch.current.removed
   end
 end
-
-repo = ObjectStore.init
-    repo.add("object1", "content1")
-    commit1 = repo.commit("First commit").result
-
-    repo.branch.create("develop")
-
-    repo.add("object2", "content2")
-    repo.commit("Second commit")
-
-    repo.branch.checkout("develop")
-
-    time_format  = "%a %b %d %H:%M %Y %z"
-    current_time = Time.now.strftime(time_format)
-
-    commit1_hash = Digest::SHA1.hexdigest("#{commit1.date.strftime(time_format)}#{commit1.message}")
-
-puts repo.log.message
