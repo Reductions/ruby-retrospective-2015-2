@@ -100,9 +100,10 @@ class ObjectStore
 
     def remove(branch_name)
       if branch_name.to_sym == @name
-        Message.new("Can't remove current branch.", false)
+        Message.new("Cannot remove current branch.", false)
       elsif @branches.has_key?(branch_name.to_sym)
-        Message.new("Removed branch #{branch_name}", true)
+        @branches.delete(branch_name.to_sym)
+        Message.new("Removed branch #{branch_name}.", true)
       else
         Message.new("Branch #{branch_name} does not exist.", false)
       end
@@ -183,7 +184,7 @@ class ObjectStore
                   true,
                   commited[-1].content[name.to_sym])
     else
-      Message.new("Object #{name} is not commited.", false)
+      Message.new("Object #{name} is not committed.", false)
     end
   end
 
