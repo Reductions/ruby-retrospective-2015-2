@@ -84,7 +84,7 @@ class ObjectStore
       if @branches.has_key?(symbol_name = name.to_sym)
         Message.new("Branch #{name} already exists.", false)
       else
-        @branches[symbol_name] = @current
+        @branches[symbol_name] = Branch.new(@current.commited.dup)
         Message.new("Creat branch #{name}.")
       end
     end
@@ -211,13 +211,17 @@ end
 repo = ObjectStore.init
     repo.add("object1", "content1")
     commit1 = repo.commit("First commit").result
+
+    repo.branch.create("develop")
+
     repo.add("object2", "content2")
-    commit2 = repo.commit("Second commit").result
+    repo.commit("Second commit")
+
+    repo.branch.checkout("develop")
 
     time_format  = "%a %b %d %H:%M %Y %z"
     current_time = Time.now.strftime(time_format)
 
     commit1_hash = Digest::SHA1.hexdigest("#{commit1.date.strftime(time_format)}#{commit1.message}")
-    commit2_hash = Digest::SHA1.hexdigest("#{commit2.date.strftime(time_format)}#{commit2.message}")
 
 puts repo.log.message
