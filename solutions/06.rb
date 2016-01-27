@@ -1,6 +1,6 @@
 module TurtleGraphics
   module Canvas
-    class ASKII
+    class ASCII
       def initialize(list)
         @ratio = list.map.
                  with_index { |item, index| [index.to_f / (list.size - 1), item] }
@@ -38,7 +38,7 @@ module TurtleGraphics
       end
 
       def pixel(opasity)
-        "<td style=\"opacity: #{opasity.round(2)}\"></td>"
+        "<td style=\"opacity: #{format('%.2f', opasity)}\"></td>"
       end
     end
   end
@@ -58,6 +58,7 @@ module TurtleGraphics
     def spawn_at(row, column)
       @position[:column] = column
       @position[:row] = row
+      @grid[row][column] += 1
     end
 
     def look(orientation)
