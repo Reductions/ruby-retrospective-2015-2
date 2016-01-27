@@ -26,7 +26,7 @@ class ObjectStore
       @content = content
       @message = message
       @date = Time.now
-      @hash = Digest::SHA1.hexdigest(@date.to_s + message )
+      @hash = Digest::SHA1.hexdigest(formated_date.to_s + @message)
     end
 
     def objects
@@ -34,7 +34,13 @@ class ObjectStore
     end
 
     def to_s
-      "Commit #{@hash}\nDate: #{@date}\n\n\t#{@message}"
+      "Commit #{@hash}\nDate: #{formated_date}\n\n\t#{@message}"
+    end
+
+    private
+
+    def formated_date
+      @date.strftime("%a %b %d %H:%M %Y %z")
     end
   end
 
@@ -166,9 +172,9 @@ class ObjectStore
       Message.new("Branch #{@branch.name} does not have any commits yet.",
                   false)
     else
-      message = commited[1..-1].map { |item| item.to_s }.join("\n\n")
+      message = commited.reverse[0...-1].map { |item| item.to_s }.join("\n\n")
       Message.new(message)
-    end
+      end
   end
 
   def get(name)
@@ -204,8 +210,14 @@ end
 
 repo = ObjectStore.init
     repo.add("object1", "content1")
+    commit1 = repo.commit("First commit").result
     repo.add("object2", "content2")
-    repo.commit("So cool!")
-    repo.remove("object2")
-    m = repo.commit("Removed object2")
-    puts m.message
+    commit2 = repo.commit("Second commit").result
+
+    time_format  = "%a %b %d %H:%M %Y %z"
+    current_time = Time.now.strftime(time_format)
+
+    commit1_hash = Digest::SHA1.hexdigest("#{commit1.date.strftime(time_format)}#{commit1.message}")
+    commit2_hash = Digest::SHA1.hexdigest("#{commit2.date.strftime(time_format)}#{commit2.message}")
+
+puts repo.log.message
