@@ -127,6 +127,13 @@ class ObjectStore
   end
 
   def remove(name)
+    if commited[1].content.include?(symbol_name = name.to_sym)
+      removed << symbol_name unless removed.include?(symbol_name)
+      Message.new("Added #{name} for removal.", true,
+               commited[1].content[symbol_name])
+    else
+      Message.new("Object #{name} is not committed.", false)
+    end
   end
 
   def checkout(hash)
@@ -181,10 +188,3 @@ class ObjectStore
     @branch.current.removed
   end
 end
-
-repo = ObjectStore.init
-repo.add("asd", 1)
-repo.add("sdw", 2)
-repo.commit("first")
-h = repo.head.result
-p h
